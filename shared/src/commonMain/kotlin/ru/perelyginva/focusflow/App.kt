@@ -1,49 +1,26 @@
 package ru.perelyginva.focusflow
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import org.jetbrains.compose.resources.painterResource
+import androidx.compose.runtime.Composable
+import org.koin.dsl.module
+import ru.perelyginva.focusflow.core.designsystem.FocusFlowTheme
+import ru.perelyginva.focusflow.feature.habits.FakeHabitRepository
+import ru.perelyginva.focusflow.feature.habits.HabitsScreen
+import ru.perelyginva.focusflow.feature.habits.HabitsViewModel
 
-import focusflow.shared.generated.resources.Res
-import focusflow.shared.generated.resources.compose_multiplatform
+
+val habitsModule = module {
+    factory { HabitsViewModel(FakeHabitRepository()) }
+}
 
 @Composable
-@Preview
 fun App() {
-    MaterialTheme {
-        var showContent by remember { mutableStateOf(false) }
-        Column(
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .safeContentPadding()
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Button(onClick = { showContent = !showContent }) {
-                Text("Click me!")
-            }
-            AnimatedVisibility(showContent) {
-                val greeting = remember { Greeting().greet() }
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Image(painterResource(Res.drawable.compose_multiplatform), null)
-                    Text("Compose: $greeting")
-                }
-            }
+
+    org.koin.compose.KoinApplication(application = {
+        modules(habitsModule)
+        printLogger(org.koin.core.logger.Level.DEBUG)
+    }) {
+        FocusFlowTheme(darkTheme = isSystemInDarkTheme()) {
+            HabitsScreen()
         }
     }
 }

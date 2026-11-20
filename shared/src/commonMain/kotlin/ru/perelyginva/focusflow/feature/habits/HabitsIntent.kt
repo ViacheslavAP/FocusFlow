@@ -1,4 +1,4 @@
-package ru.perelyginva.focusflow.habits
+package ru.perelyginva.focusflow.feature.habits
 
 interface HabitsIntent {
     data object LoadHabits : HabitsIntent

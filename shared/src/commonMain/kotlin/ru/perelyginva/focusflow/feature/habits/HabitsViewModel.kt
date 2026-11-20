@@ -1,5 +1,6 @@
-package ru.perelyginva.focusflow.habits
+package ru.perelyginva.focusflow.feature.habits
 
+import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -12,39 +13,47 @@ import kotlinx.coroutines.launch
 
 class HabitsViewModel(
     private val habitsRepository: HabitsRepository = FakeHabitRepository()
-) {
+) : ViewModel() {
     private val viewModelScope = CoroutineScope(
         SupervisorJob() + Dispatchers.Main.immediate
     )
 
-    private val _state = MutableStateFlow(HabitsState())
+    private val _state = MutableStateFlow<HabitsState>(HabitsState.Loading)
     val state: StateFlow<HabitsState> = _state.asStateFlow()
 
     init {
-       onIntent(HabitsIntent.LoadHabits)
+        onIntent(HabitsIntent.LoadHabits)
     }
 
     fun onIntent(intent: HabitsIntent) {
         viewModelScope.launch {
             when (intent) {
                 is HabitsIntent.LoadHabits -> {
-                    _state.update { it.copy(isLoading = true) }
+                    _state.value = HabitsState.Loading
                     try {
                         val habits = habitsRepository.getAll()
-                        _state.update { it.copy(isLoading = false, habits = habits) }
+                        _state.value = HabitsState.Success(habits)
                     } catch (e: Exception) {
-                        _state.update { it.copy(isLoading = false, error = e.message) }
+                        _state.value = HabitsState.Error(
+                            e.message ?: "Неизвестная ошибка"
+                        )
                     }
                 }
+
                 is HabitsIntent.ToggleHabit -> {
-                    habitsRepository.toggle(intent.id)
-                    onIntent(HabitsIntent.LoadHabits)
+                    try {
+                        habitsRepository.toggle(intent.id)
+                        onIntent(HabitsIntent.LoadHabits)
+                    } catch (e: Exception) {
+                        _state.value = HabitsState.Error(e.message ?: "Ошибка обновления")
+
+                    }
                 }
             }
         }
     }
 
-    fun onCleared() {
+    override fun onCleared() {
         viewModelScope.cancel()
     }
 }
