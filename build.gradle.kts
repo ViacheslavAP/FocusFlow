@@ -8,4 +8,5 @@ plugins {
     alias(libs.plugins.kotlinJvm) apply false
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.androidLint) apply false
+    kotlin("plugin.serialization") version libs.versions.kotlin.get() apply false
 }

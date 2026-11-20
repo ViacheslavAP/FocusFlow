@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    kotlin("plugin.serialization") version libs.versions.kotlin.get()
 }
 
 kotlin {
@@ -56,9 +57,9 @@ kotlin {
             implementation(libs.adaptive)
             implementation(libs.adaptive.layout)
             implementation(libs.adaptive.navigation)
-
             implementation(libs.navigation.compose)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.compose.ui.backhandler)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

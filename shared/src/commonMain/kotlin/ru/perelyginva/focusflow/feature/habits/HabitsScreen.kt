@@ -20,64 +20,40 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
-import androidx.compose.material3.adaptive.WindowAdaptiveInfo
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
+import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffold
-import androidx.compose.material3.adaptive.layout.PaneAdaptedValue
-import androidx.compose.material3.adaptive.layout.ThreePaneScaffoldValue
-import androidx.compose.material3.adaptive.layout.calculatePaneScaffoldDirective
-import androidx.compose.material3.adaptive.navigation.ThreePaneScaffoldNavigator
+import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.paint
+import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.window.core.layout.WindowWidthSizeClass
-import org.koin.compose.viewmodel.koinViewModel
+import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3AdaptiveApi::class)
+@OptIn(ExperimentalMaterial3AdaptiveApi::class, ExperimentalComposeUiApi::class)
 @Composable
-fun HabitsScreen(
-    viewModel: HabitsViewModel = koinViewModel<HabitsViewModel>()
-) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
-    val adaptiveInfo = currentWindowAdaptiveInfoV2()
-    val directive = calculatePaneScaffoldDirective(adaptiveInfo)
-    val density = LocalDensity.current
-    val windowWidthDp = with(density){
-        LocalWindowInfo.current.containerSize.width.toDp()
-    }
-    val mediumBreakpoint = 600.dp
-    val isWideScreen = windowWidthDp >= mediumBreakpoint
+fun HabitsScreen(viewModel: HabitsViewModel) {
 
-    val scaffoldValue by remember(isWideScreen){
-        derivedStateOf {
-            if (isWideScreen) {
-                ThreePaneScaffoldValue(
-                    primary = PaneAdaptedValue.Expanded,
-                    secondary = PaneAdaptedValue.Expanded,
-                    tertiary = PaneAdaptedValue.Hidden
-                )
-            } else {
-                ThreePaneScaffoldValue(
-                    primary = PaneAdaptedValue.Hidden,
-                    secondary = PaneAdaptedValue.Expanded,
-                    tertiary = PaneAdaptedValue.Hidden
-                )
-            }
-        }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val navigator = rememberListDetailPaneScaffoldNavigator<HabitItem>()
+    val scope = rememberCoroutineScope()
+
+
+    BackHandler(enabled = navigator.canNavigateBack()) {
+        scope.launch { navigator.navigateBack() }
     }
 
     ListDetailPaneScaffold(
-        directive = directive,
-        value = scaffoldValue,
+        directive = navigator.scaffoldDirective,
+        value = navigator.scaffoldValue,
         listPane = {
             Column(
                 modifier = Modifier
@@ -117,11 +93,18 @@ fun HabitsScreen(
 
                     is HabitsState.Success -> {
                         LazyColumn {
-                            items(currentState.habits) { habit ->
+                            items(currentState.habits) { habitName ->
                                 ListItem(
-                                    headlineContent = { Text(habit) },
+                                    headlineContent = { Text(habitName) },
                                     modifier = Modifier
-                                        .clickable { /* TODO */ }
+                                        .clickable {
+                                            scope.launch {
+                                                navigator.navigateTo(
+                                                    pane = ListDetailPaneScaffoldRole.Detail,
+                                                    contentKey = HabitItem(habitName)
+                                                )
+                                            }
+                                        }
                                 )
                                 HorizontalDivider()
                             }
@@ -131,14 +114,34 @@ fun HabitsScreen(
             }
         },
         detailPane = {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .windowInsetsPadding(WindowInsets.systemBars)
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Детали привычки")
+            AnimatedPane {
+                val selectedItem = navigator.currentDestination?.contentKey
+                if (selectedItem != null) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .windowInsetsPadding(WindowInsets.systemBars)
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "Детали: ${selectedItem.name}",
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        Text("Здесь будет полная информация о привычке")
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "Выберите привычку из списка",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
             }
         }
     )

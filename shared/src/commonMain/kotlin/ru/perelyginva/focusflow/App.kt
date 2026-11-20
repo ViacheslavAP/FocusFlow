@@ -1,26 +1,21 @@
 package ru.perelyginva.focusflow
 
 import androidx.compose.runtime.Composable
-import org.koin.dsl.module
+import org.koin.compose.KoinApplication
 import ru.perelyginva.focusflow.core.designsystem.FocusFlowTheme
-import ru.perelyginva.focusflow.feature.habits.FakeHabitRepository
-import ru.perelyginva.focusflow.feature.habits.HabitsScreen
-import ru.perelyginva.focusflow.feature.habits.HabitsViewModel
+import ru.perelyginva.focusflow.feature.habits.habitsModule
+import ru.perelyginva.focusflow.navigation.AppNavigation
 
-
-val habitsModule = module {
-    factory { HabitsViewModel(FakeHabitRepository()) }
-}
 
 @Composable
 fun App() {
 
-    org.koin.compose.KoinApplication(application = {
+    KoinApplication(application = {
         modules(habitsModule)
         printLogger(org.koin.core.logger.Level.DEBUG)
     }) {
         FocusFlowTheme(darkTheme = isSystemInDarkTheme()) {
-            HabitsScreen()
+            AppNavigation()
         }
     }
 }
